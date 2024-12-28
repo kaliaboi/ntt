@@ -382,3 +382,28 @@ export function usePropertyStats(typeId: string, propertyName: string) {
 
   return { stats, loading, error };
 }
+
+// Add this new hook for getting a single type
+export function useEntityType(typeId: string) {
+  const [type, setType] = useState<EntityType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const loadType = async () => {
+      try {
+        setLoading(true);
+        const loadedType = await db.types.getType(typeId);
+        setType(loadedType);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("Failed to load type"));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadType();
+  }, [typeId]);
+
+  return { type, loading, error };
+}

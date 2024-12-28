@@ -2,10 +2,14 @@
 import React, { useState } from "react";
 import { useDatabase } from "../../hooks/useDatabase";
 import TypesList from "../EntityTypes/TypesList";
+import InstancesList from "../EntityInstances/InstancesList";
+import DetailsPanel from "../EntityDetails/DetailsPanel";
+import type { EntityInstance } from "../../lib/db";
 
 const MainLayout: React.FC = () => {
   const { isInitialized } = useDatabase();
   const [selectedTypeId, setSelectedTypeId] = useState<string>();
+  const [selectedInstance, setSelectedInstance] = useState<EntityInstance>();
 
   if (!isInitialized) {
     return (
@@ -22,7 +26,10 @@ const MainLayout: React.FC = () => {
         <div className="w-1/4 border-r border-green-500/30">
           <div className="p-2 border-b border-green-500/30">Types</div>
           <TypesList
-            onSelectType={setSelectedTypeId}
+            onSelectType={(id) => {
+              setSelectedTypeId(id);
+              setSelectedInstance(undefined);
+            }}
             selectedTypeId={selectedTypeId}
           />
         </div>
@@ -30,17 +37,25 @@ const MainLayout: React.FC = () => {
         {/* Instances Panel */}
         <div className="w-1/4 border-r border-green-500/30">
           <div className="p-2 border-b border-green-500/30">Instances</div>
-          <div className="p-2">
-            {selectedTypeId
-              ? "Instance list coming soon..."
-              : "Select a type to view instances"}
-          </div>
+          {selectedTypeId ? (
+            <InstancesList
+              typeId={selectedTypeId}
+              onSelectInstance={setSelectedInstance}
+              selectedInstanceId={selectedInstance?.id}
+            />
+          ) : (
+            <div className="p-2">Select a type to view instances</div>
+          )}
         </div>
 
         {/* Details Panel */}
         <div className="flex-1">
           <div className="p-2 border-b border-green-500/30">Details</div>
-          <div className="p-2">Select an instance to view details</div>
+          {selectedInstance ? (
+            <DetailsPanel instance={selectedInstance} />
+          ) : (
+            <div className="p-2">Select an instance to view details</div>
+          )}
         </div>
       </div>
     </div>
