@@ -4,12 +4,14 @@ import { useDatabase } from "../../hooks/useDatabase";
 import TypesList from "../EntityTypes/TypesList";
 import InstancesList from "../EntityInstances/InstancesList";
 import DetailsPanel from "../EntityDetails/DetailsPanel";
+import CreateTypeDialog from "../EntityTypes/CreateTypeDialog";
 import type { EntityInstance } from "../../lib/db";
 
 const MainLayout: React.FC = () => {
   const { isInitialized } = useDatabase();
   const [selectedTypeId, setSelectedTypeId] = useState<string>();
   const [selectedInstance, setSelectedInstance] = useState<EntityInstance>();
+  const [createTypeDialogOpen, setCreateTypeDialogOpen] = useState(false);
 
   if (!isInitialized) {
     return (
@@ -24,7 +26,15 @@ const MainLayout: React.FC = () => {
       <div className="flex h-full">
         {/* Types Panel */}
         <div className="w-1/4 border-r border-green-500/30">
-          <div className="p-2 border-b border-green-500/30">Types</div>
+          <div className="p-2 border-b border-green-500/30 flex justify-between items-center">
+            <span>Types</span>
+            <button
+              onClick={() => setCreateTypeDialogOpen(true)}
+              className="text-green-500 hover:text-green-400"
+            >
+              +
+            </button>
+          </div>
           <TypesList
             onSelectType={(id) => {
               setSelectedTypeId(id);
@@ -36,7 +46,6 @@ const MainLayout: React.FC = () => {
 
         {/* Instances Panel */}
         <div className="w-1/4 border-r border-green-500/30">
-          <div className="p-2 border-b border-green-500/30">Instances</div>
           {selectedTypeId ? (
             <InstancesList
               typeId={selectedTypeId}
@@ -50,7 +59,6 @@ const MainLayout: React.FC = () => {
 
         {/* Details Panel */}
         <div className="flex-1">
-          <div className="p-2 border-b border-green-500/30">Details</div>
           {selectedInstance ? (
             <DetailsPanel instance={selectedInstance} />
           ) : (
@@ -58,6 +66,11 @@ const MainLayout: React.FC = () => {
           )}
         </div>
       </div>
+
+      <CreateTypeDialog
+        open={createTypeDialogOpen}
+        onClose={() => setCreateTypeDialogOpen(false)}
+      />
     </div>
   );
 };

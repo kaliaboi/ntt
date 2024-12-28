@@ -1,67 +1,57 @@
 // src/components/EntityDetails/DetailsPanel.tsx
-import React from "react";
-import type { EntityInstance, PropertyType } from "../../lib/db";
-import { useEntityType } from "../../hooks/useDatabase";
+import React, { useState, useEffect } from "react";
+import type { EntityInstance } from "../../lib/db";
+import { useEntityType, useEntityInstances } from "../../hooks/useDatabase";
 
 interface DetailsPanelProps {
   instance: EntityInstance;
 }
 
 const DetailsPanel: React.FC<DetailsPanelProps> = ({ instance }) => {
-  const { type, loading, error } = useEntityType(instance.typeId);
+  const { type } = useEntityType(instance.typeId);
+  const { updateInstance } = useEntityInstances(instance.typeId);
+  const [name, setName] = useState(instance.properties.name || "Untitled");
+  const [content, setContent] = useState(instance.properties.content || "");
 
-  if (loading) return <div className="p-2">Loading details...</div>;
-  if (error)
-    return <div className="p-2 text-red-500">Error: {error.message}</div>;
-  if (!type) return <div className="p-2">Type not found</div>;
+  // Update local state when instance changes
+  useEffect(() => {
+    setName(instance.properties.name || "Untitled");
+    setContent(instance.properties.content || "");
+  }, [instance]);
+
+  const handleNameChange = async (newName: string) => {
+    setName(newName);
+    await updateInstance(instance.id, {
+      ...instance.properties,
+      name: newName,
+    });
+  };
+
+  const handleContentChange = async (newContent: string) => {
+    setContent(newContent);
+    await updateInstance(instance.id, {
+      ...instance.properties,
+      content: newContent,
+    });
+  };
+
+  if (!type) return null;
 
   return (
-    <div className="space-y-4">
-      <div className="border-b border-green-500/30 pb-2">
-        <div className="text-green-300">Type: {type.name}</div>
-        <div className="text-xl">
-          {instance.properties.name || "Unnamed Instance"}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        {type.properties.map((prop) => (
-          <div key={prop.name} className="flex">
-            <div className="w-1/3 text-green-300">{prop.name}:</div>
-            <div>
-              {formatPropertyValue(instance.properties[prop.name], prop.type)}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="text-xs text-green-500/50">
-        <div>
-          Created: {new Date(instance.metadata.created).toLocaleString()}
-        </div>
-        <div>
-          Modified: {new Date(instance.metadata.modified).toLocaleString()}
-        </div>
-      </div>
+    <div className="h-full flex flex-col">
+      <input
+        value={name}
+        onChange={(e) => handleNameChange(e.target.value)}
+        className="w-full bg-transparent border-b border-green-500/30 p-2 focus:outline-none"
+      />
+      <textarea
+        value={content}
+        onChange={(e) => handleContentChange(e.target.value)}
+        className="flex-1 w-full bg-transparent p-2 focus:outline-none resize-none"
+        placeholder="Start typing..."
+      />
     </div>
   );
 };
-
-function formatPropertyValue(value: any, type: PropertyType): string {
-  if (value === undefined || value === null) return "-";
-
-  switch (type.kind) {
-    case "date":
-      return new Date(value).toLocaleDateString();
-    case "boolean":
-      return value ? "Yes" : "No";
-    case "reference":
-      return `→ ${value}`;
-    case "enum":
-      return value;
-    default:
-      return String(value);
-  }
-}
 
 export default DetailsPanel;
