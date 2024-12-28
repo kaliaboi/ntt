@@ -1,13 +1,8 @@
 import "./App.css";
+import MainLayout from "./components/Layout/MainLayout";
 
 function App() {
-  return (
-    <>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  );
+  return <MainLayout />;
 }
 
 export default App;
