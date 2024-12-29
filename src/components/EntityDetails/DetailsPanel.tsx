@@ -63,13 +63,13 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
         onChange={(e) => setName(e.target.value)}
         onBlur={(e) => handleNameSave(e.target.value)}
         placeholder="Untitled"
-        className="w-full bg-transparent border-b border-green-500/30 p-2 focus:outline-none"
+        className="text-xs w-full bg-transparent border-b border-green-500/30 p-2 focus:outline-none"
       />
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onBlur={(e) => handleContentSave(e.target.value)}
-        className="flex-1 w-full bg-transparent p-2 focus:outline-none resize-none"
+        className="text-xs flex-1 w-full bg-transparent p-2 focus:outline-none resize-none"
         placeholder="Start typing..."
       />
     </div>

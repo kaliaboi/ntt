@@ -1,6 +1,6 @@
 // src/components/Layout/MainLayout.tsx
 import React, { useState } from "react";
-import { useDatabase, useEntityTypes } from "../../hooks/useDatabase";
+import { useDatabase } from "../../hooks/useDatabase";
 import TypesList from "../EntityTypes/TypesList";
 import InstancesList from "../EntityInstances/InstancesList";
 import DetailsPanel from "../EntityDetails/DetailsPanel";
@@ -10,7 +10,8 @@ import type { EntityInstance } from "../../lib/db";
 const MainLayout: React.FC = () => {
   const { isInitialized } = useDatabase();
   const [selectedTypeId, setSelectedTypeId] = useState<string>();
-  const [selectedInstance, setSelectedInstance] = useState<EntityInstance>();
+  const [selectedInstance, setSelectedInstance] =
+    useState<EntityInstance | null>(null);
   const [createTypeDialogOpen, setCreateTypeDialogOpen] = useState(false);
 
   if (!isInitialized) {
@@ -28,9 +29,9 @@ const MainLayout: React.FC = () => {
   return (
     <div className="h-screen bg-black text-green-500 font-mono">
       <div className="h-full flex">
-        <div className="w-48 border-r border-green-500/30">
+        <div className="w-36 border-r border-green-500/30">
           <div className="p-2 border-b border-green-500/30 flex justify-between items-center">
-            <span>Types</span>
+            <span className="text-xs">Types</span>
             <button
               onClick={() => setCreateTypeDialogOpen(true)}
               className="text-green-500 hover:text-green-400"
@@ -42,7 +43,7 @@ const MainLayout: React.FC = () => {
             selectedTypeId={selectedTypeId}
             onSelectType={(typeId) => {
               setSelectedTypeId(typeId);
-              setSelectedInstance(undefined);
+              setSelectedInstance(null);
             }}
           />
         </div>

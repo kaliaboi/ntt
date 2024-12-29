@@ -1,6 +1,6 @@
 // src/lib/db/entity-type-store.ts
 import { Database } from "./database";
-import { EntityType, PropertyDefinition } from "./types";
+import { EntityInstance, EntityType, PropertyDefinition } from "./types";
 
 export class EntityTypeStore {
   constructor(private db: Database) {}
@@ -221,25 +221,27 @@ export class EntityTypeStore {
 
   async deleteType(id: string): Promise<void> {
     await this.db.runTransaction("entityTypes", "readwrite", async (store) => {
-      // Check if type exists
-      const existingType = await new Promise<EntityType | undefined>(
-        (resolve, reject) => {
-          const request = store.get(IDBKeyRange.only(id));
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        }
-      );
-
-      if (!existingType) {
-        throw new Error(`Type ${id} not found`);
-      }
-
-      // Delete the type
       await new Promise<void>((resolve, reject) => {
         const request = store.delete(id);
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
     });
+  }
+
+  async getTypeInstanceCount(id: string): Promise<number> {
+    const instances = await this.db.runTransaction(
+      "entityInstances",
+      "readonly",
+      async (store) => {
+        const index = store.index("by-type");
+        return new Promise<EntityInstance[]>((resolve, reject) => {
+          const request = index.getAll(IDBKeyRange.only(id));
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+    );
+    return instances.length;
   }
 }

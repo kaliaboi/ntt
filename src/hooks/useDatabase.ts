@@ -48,7 +48,32 @@ export function useEntityTypes() {
     }
   };
 
-  return { types, loading, error, createType };
+  const deleteType = async (id: string) => {
+    try {
+      const instanceCount = await db.types.getTypeInstanceCount(id);
+      if (instanceCount > 0) {
+        const confirmed = window.confirm(
+          `This type contains ${instanceCount} instance${
+            instanceCount === 1 ? "" : "s"
+          }. Are you sure you want to delete it? This will delete all instances as well.`
+        );
+        if (!confirmed) return false;
+      } else {
+        const confirmed = window.confirm(
+          "Are you sure you want to delete this type?"
+        );
+        if (!confirmed) return false;
+      }
+
+      await db.types.deleteType(id);
+      setTypes((current) => current.filter((type) => type.id !== id));
+      return true;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to delete type");
+    }
+  };
+
+  return { types, loading, error, createType, deleteType };
 }
 
 // Create a simple event system
@@ -130,7 +155,31 @@ export function useEntityInstances(typeId: string) {
     }
   };
 
-  return { instances, loading, error, createInstance, updateInstance };
+  const deleteInstance = async (instanceId: string) => {
+    try {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this instance?"
+      );
+      if (!confirmed) return false;
+
+      await db.instances.deleteInstance(instanceId);
+      instanceUpdateEvents.dispatchEvent(
+        new CustomEvent("instanceUpdate", { detail: { typeId } })
+      );
+      return true;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to delete instance");
+    }
+  };
+
+  return {
+    instances,
+    loading,
+    error,
+    createInstance,
+    updateInstance,
+    deleteInstance,
+  };
 }
 
 // Hook for a single instance

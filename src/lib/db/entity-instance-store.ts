@@ -159,18 +159,6 @@ export class EntityInstanceStore {
       "entityInstances",
       "readwrite",
       async (store) => {
-        const existingInstance = await new Promise<EntityInstance | undefined>(
-          (resolve, reject) => {
-            const request = store.get(IDBKeyRange.only(id));
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          }
-        );
-
-        if (!existingInstance) {
-          throw new Error(`Instance ${id} not found`);
-        }
-
         await new Promise<void>((resolve, reject) => {
           const request = store.delete(id);
           request.onsuccess = () => resolve();
