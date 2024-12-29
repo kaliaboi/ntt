@@ -1,10 +1,20 @@
 // src/lib/db/database.ts
 
+import { EntityTypeStore } from "./entity-type-store";
+import { EntityInstanceStore } from "./entity-instance-store";
+
 const DB_NAME = "EntityDB";
 const DB_VERSION = 1;
 
 export class Database {
   private db: IDBDatabase | null = null;
+  public types: EntityTypeStore;
+  public instances: EntityInstanceStore;
+
+  constructor() {
+    this.types = new EntityTypeStore(this);
+    this.instances = new EntityInstanceStore(this);
+  }
 
   // Initialize the database
   async init(): Promise<void> {

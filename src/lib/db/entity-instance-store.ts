@@ -9,9 +9,13 @@ export class EntityInstanceStore {
     typeId: string,
     properties: Record<string, any>
   ): Promise<EntityInstance> {
+    const type = await this.db.types.getType(typeId);
+    if (!type) throw new Error(`Type ${typeId} not found`);
+
     const instance: EntityInstance = {
       id: crypto.randomUUID(),
       typeId,
+      type,
       properties,
       metadata: {
         created: Date.now(),
@@ -34,8 +38,16 @@ export class EntityInstanceStore {
     return instance;
   }
 
+  private async attachTypeToInstance(
+    instance: EntityInstance
+  ): Promise<EntityInstance> {
+    const type = await this.db.types.getType(instance.typeId);
+    if (!type) throw new Error(`Type ${instance.typeId} not found`);
+    return { ...instance, type };
+  }
+
   async getInstance(id: string): Promise<EntityInstance | null> {
-    return await this.db.runTransaction(
+    const instance = await this.db.runTransaction(
       "entityInstances",
       "readonly",
       async (store) => {
@@ -46,10 +58,13 @@ export class EntityInstanceStore {
         });
       }
     );
+
+    if (!instance) return null;
+    return this.attachTypeToInstance(instance);
   }
 
   async getInstancesByType(typeId: string): Promise<EntityInstance[]> {
-    return await this.db.runTransaction(
+    const instances = await this.db.runTransaction(
       "entityInstances",
       "readonly",
       async (store) => {
@@ -60,6 +75,10 @@ export class EntityInstanceStore {
           request.onerror = () => reject(request.error);
         });
       }
+    );
+
+    return Promise.all(
+      instances.map((instance) => this.attachTypeToInstance(instance))
     );
   }
 

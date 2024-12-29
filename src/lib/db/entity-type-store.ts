@@ -82,45 +82,33 @@ export class EntityTypeStore {
 
   async updateType(
     id: string,
-    updates: Partial<EntityType>
+    updates: Partial<Omit<EntityType, "id">>
   ): Promise<EntityType> {
     return await this.db.runTransaction(
       "entityTypes",
       "readwrite",
       async (store) => {
         // Get existing type
-        const existingType = await new Promise<EntityType | undefined>(
-          (resolve, reject) => {
-            const request = store.get(IDBKeyRange.only(id));
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          }
-        );
-
-        if (!existingType) {
-          throw new Error(`Type ${id} not found`);
-        }
-
-        // If name is being updated, check for conflicts
-        if (updates.name && updates.name !== existingType.name) {
-          const index = store.index("by-name");
-          const nameConflict = await new Promise<EntityType | undefined>(
-            (resolve, reject) => {
-              const request = index.get(IDBKeyRange.only(updates.name));
-              request.onsuccess = () => resolve(request.result);
-              request.onerror = () => reject(request.error);
+        const type = await new Promise<EntityType>((resolve, reject) => {
+          const request = store.get(IDBKeyRange.only(id));
+          request.onsuccess = () => {
+            if (!request.result) {
+              reject(new Error("Type not found"));
+            } else {
+              resolve(request.result);
             }
-          );
+          };
+          request.onerror = () => reject(request.error);
+        });
 
-          if (nameConflict) {
-            throw new Error(`Type with name "${updates.name}" already exists`);
-          }
-        }
+        // Update the type
+        const updatedType: EntityType = {
+          ...type,
+          ...updates,
+          properties: updates.properties || type.properties,
+        };
 
-        // Merge updates with existing type
-        const updatedType = { ...existingType, ...updates };
-
-        // Save updated type
+        // Save the updated type
         await new Promise<void>((resolve, reject) => {
           const request = store.put(updatedType);
           request.onsuccess = () => resolve();

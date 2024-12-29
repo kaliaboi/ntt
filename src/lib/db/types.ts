@@ -31,6 +31,7 @@ export type PropertyType =
 export interface EntityInstance {
   id: string; // Unique identifier for the instance
   typeId: string; // Which type this instance belongs to
+  type: EntityType; // Add this line
   properties: {
     // The actual values for each property
     [key: string]: any; // Key is property name, value is the property value

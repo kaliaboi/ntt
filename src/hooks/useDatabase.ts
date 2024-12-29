@@ -73,7 +73,22 @@ export function useEntityTypes() {
     }
   };
 
-  return { types, loading, error, createType, deleteType };
+  const updateType = async (
+    typeId: string,
+    updates: Partial<Omit<EntityType, "id">>
+  ) => {
+    try {
+      const updatedType = await db.types.updateType(typeId, updates);
+      setTypes((current) =>
+        current.map((type) => (type.id === typeId ? updatedType : type))
+      );
+      return updatedType;
+    } catch (err) {
+      throw err instanceof Error ? err : new Error("Failed to update type");
+    }
+  };
+
+  return { types, loading, error, createType, deleteType, updateType };
 }
 
 // Create a simple event system
