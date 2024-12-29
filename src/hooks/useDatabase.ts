@@ -1,5 +1,5 @@
 // src/hooks/useDatabase.ts
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import db, { EntityType, EntityInstance } from "../lib/db";
 
 // Hook for managing database initialization
@@ -22,7 +22,7 @@ export function useEntityTypes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const loadTypes = async () => {
+  const loadTypes = useCallback(async () => {
     try {
       setLoading(true);
       const allTypes = await db.types.getAllTypes();
@@ -32,24 +32,27 @@ export function useEntityTypes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTypes();
-  }, []);
+  }, [loadTypes]);
 
   const createType = async (type: Omit<EntityType, "id">) => {
     try {
       const newType = await db.types.createType(type);
-      setTypes((prev) => [...prev, newType]);
+      await loadTypes(); // Force a refresh after creation
       return newType;
     } catch (err) {
       throw err instanceof Error ? err : new Error("Failed to create type");
     }
   };
 
-  return { types, loading, error, createType, refreshTypes: loadTypes };
+  return { types, loading, error, createType };
 }
+
+// Create a simple event system
+const instanceUpdateEvents = new EventTarget();
 
 // Hook for managing instances of a specific type
 export function useEntityInstances(typeId: string) {
@@ -57,11 +60,11 @@ export function useEntityInstances(typeId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const loadInstances = async () => {
+  const loadInstances = useCallback(async () => {
     try {
       setLoading(true);
-      const typeInstances = await db.instances.getInstancesByType(typeId);
-      setInstances(typeInstances);
+      const allInstances = await db.instances.getInstancesByType(typeId);
+      setInstances(allInstances);
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("Failed to load instances")
@@ -69,16 +72,40 @@ export function useEntityInstances(typeId: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [typeId]);
+
+  // Listen for instance updates
+  useEffect(() => {
+    const handleInstanceUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ typeId: string }>;
+      if (customEvent.detail.typeId === typeId) {
+        loadInstances();
+      }
+    };
+
+    instanceUpdateEvents.addEventListener(
+      "instanceUpdate",
+      handleInstanceUpdate
+    );
+
+    return () => {
+      instanceUpdateEvents.removeEventListener(
+        "instanceUpdate",
+        handleInstanceUpdate
+      );
+    };
+  }, [typeId, loadInstances]);
 
   useEffect(() => {
     loadInstances();
-  }, [typeId]);
+  }, [loadInstances]);
 
   const createInstance = async (properties: Record<string, any>) => {
     try {
       const newInstance = await db.instances.createInstance(typeId, properties);
-      setInstances((prev) => [...prev, newInstance]);
+      instanceUpdateEvents.dispatchEvent(
+        new CustomEvent("instanceUpdate", { detail: { typeId } })
+      );
       return newInstance;
     } catch (err) {
       throw err instanceof Error ? err : new Error("Failed to create instance");
@@ -86,38 +113,24 @@ export function useEntityInstances(typeId: string) {
   };
 
   const updateInstance = async (
-    id: string,
+    instanceId: string,
     properties: Record<string, any>
   ) => {
     try {
-      const updated = await db.instances.updateProperties(id, properties);
-      setInstances((prev) =>
-        prev.map((instance) => (instance.id === id ? updated : instance))
+      const updatedInstance = await db.instances.updateInstance(
+        instanceId,
+        properties
       );
-      return updated;
+      instanceUpdateEvents.dispatchEvent(
+        new CustomEvent("instanceUpdate", { detail: { typeId } })
+      );
+      return updatedInstance;
     } catch (err) {
       throw err instanceof Error ? err : new Error("Failed to update instance");
     }
   };
 
-  const deleteInstance = async (id: string) => {
-    try {
-      await db.instances.deleteInstance(id);
-      setInstances((prev) => prev.filter((instance) => instance.id !== id));
-    } catch (err) {
-      throw err instanceof Error ? err : new Error("Failed to delete instance");
-    }
-  };
-
-  return {
-    instances,
-    loading,
-    error,
-    createInstance,
-    updateInstance,
-    deleteInstance,
-    refreshInstances: loadInstances,
-  };
+  return { instances, loading, error, createInstance, updateInstance };
 }
 
 // Hook for a single instance

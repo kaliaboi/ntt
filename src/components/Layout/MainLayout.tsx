@@ -1,6 +1,6 @@
 // src/components/Layout/MainLayout.tsx
 import React, { useState } from "react";
-import { useDatabase } from "../../hooks/useDatabase";
+import { useDatabase, useEntityTypes } from "../../hooks/useDatabase";
 import TypesList from "../EntityTypes/TypesList";
 import InstancesList from "../EntityInstances/InstancesList";
 import DetailsPanel from "../EntityDetails/DetailsPanel";
@@ -21,11 +21,14 @@ const MainLayout: React.FC = () => {
     );
   }
 
+  const handleInstanceUpdate = (updatedInstance: EntityInstance) => {
+    setSelectedInstance(updatedInstance);
+  };
+
   return (
     <div className="h-screen bg-black text-green-500 font-mono">
-      <div className="flex h-full">
-        {/* Types Panel */}
-        <div className="w-1/4 border-r border-green-500/30">
+      <div className="h-full flex">
+        <div className="w-48 border-r border-green-500/30">
           <div className="p-2 border-b border-green-500/30 flex justify-between items-center">
             <span>Types</span>
             <button
@@ -36,35 +39,33 @@ const MainLayout: React.FC = () => {
             </button>
           </div>
           <TypesList
-            onSelectType={(id) => {
-              setSelectedTypeId(id);
+            selectedTypeId={selectedTypeId}
+            onSelectType={(typeId) => {
+              setSelectedTypeId(typeId);
               setSelectedInstance(undefined);
             }}
-            selectedTypeId={selectedTypeId}
           />
         </div>
 
-        {/* Instances Panel */}
-        <div className="w-1/4 border-r border-green-500/30">
-          {selectedTypeId ? (
+        {selectedTypeId && (
+          <div className="w-48 border-r border-green-500/30">
             <InstancesList
               typeId={selectedTypeId}
-              onSelectInstance={setSelectedInstance}
               selectedInstanceId={selectedInstance?.id}
+              onSelectInstance={setSelectedInstance}
+              onInstanceUpdate={handleInstanceUpdate}
             />
-          ) : (
-            <div className="p-2">Select a type to view instances</div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Details Panel */}
-        <div className="flex-1">
-          {selectedInstance ? (
-            <DetailsPanel instance={selectedInstance} />
-          ) : (
-            <div className="p-2">Select an instance to view details</div>
-          )}
-        </div>
+        {selectedInstance && (
+          <div className="flex-1">
+            <DetailsPanel
+              instance={selectedInstance}
+              onInstanceUpdate={handleInstanceUpdate}
+            />
+          </div>
+        )}
       </div>
 
       <CreateTypeDialog

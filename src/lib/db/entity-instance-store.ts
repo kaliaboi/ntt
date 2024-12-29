@@ -65,36 +65,41 @@ export class EntityInstanceStore {
 
   async updateInstance(
     id: string,
-    updates: Partial<EntityInstance>
+    properties: Record<string, any>
   ): Promise<EntityInstance> {
     return await this.db.runTransaction(
       "entityInstances",
       "readwrite",
       async (store) => {
-        // Get existing instance
-        const existingInstance = await new Promise<EntityInstance | undefined>(
+        // Get the existing instance
+        const instance = await new Promise<EntityInstance>(
           (resolve, reject) => {
             const request = store.get(IDBKeyRange.only(id));
-            request.onsuccess = () => resolve(request.result);
+            request.onsuccess = () => {
+              if (!request.result) {
+                reject(new Error("Instance not found"));
+              } else {
+                resolve(request.result);
+              }
+            };
             request.onerror = () => reject(request.error);
           }
         );
 
-        if (!existingInstance) {
-          throw new Error(`Instance ${id} not found`);
-        }
-
-        // Merge updates with existing instance
-        const updatedInstance = {
-          ...existingInstance,
-          ...updates,
+        // Update the instance
+        const updatedInstance: EntityInstance = {
+          ...instance,
+          properties: {
+            ...instance.properties,
+            ...properties,
+          },
           metadata: {
-            ...existingInstance.metadata,
+            ...instance.metadata,
             modified: Date.now(),
           },
         };
 
-        // Save updated instance
+        // Save the updated instance
         await new Promise<void>((resolve, reject) => {
           const request = store.put(updatedInstance);
           request.onsuccess = () => resolve();

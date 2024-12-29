@@ -17,7 +17,7 @@ const CreateTypeDialog: React.FC<CreateTypeDialogProps> = ({
   open,
   onClose,
 }) => {
-  const { createType, refreshTypes } = useEntityTypes();
+  const { createType } = useEntityTypes();
   const [name, setName] = useState("");
   const [properties, setProperties] = useState<PropertyDefinition[]>([
     { name: "name", type: { kind: "text" }, required: true },
@@ -36,12 +36,16 @@ const CreateTypeDialog: React.FC<CreateTypeDialogProps> = ({
         color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
         properties,
       });
-      await refreshTypes();
+
+      window.location.reload();
+
+      // Reset form and close
       setName("");
       setProperties([
         { name: "name", type: { kind: "text" }, required: true },
         { name: "content", type: { kind: "text" }, required: false },
       ]);
+
       onClose();
     } catch (error) {
       console.error("Failed to create type:", error);
